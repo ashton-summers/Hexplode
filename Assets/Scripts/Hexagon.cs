@@ -4,19 +4,53 @@ using UnityEngine;
 
 public class Hexagon : MonoBehaviour
 {
-    
+
     public List<Hexagon> Charges;
     public List<Hexagon> AdjacentNeighbors;
-    public float x;
-    public float y;
-    public bool isCharged;
+    private float _x;
+    private float _y;
+    private bool _isCharged;
+    private Player _owner;
 
-    private void Start()
+  
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public float x
     {
-        Charges = new List<Hexagon>(); // charges are essentially just hexagons that have two states: charged or not charged
-        AdjacentNeighbors = new List<Hexagon>();
-        isCharged = false;
+        get { return _x; }
+        set { _x = value; }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public float y
+    {
+        get { return _y; }
+        set { _y = value; }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public bool IsCharged
+    {
+        get { return _isCharged; }
+        set { _isCharged = value; }
     }
 
  
+
+    /// <summary>
+    /// Reference to the player who has captured the hex
+    /// </summary>
+    public Player HexOwner
+    {
+        get { return _owner; }
+        set { _owner = value; }
+    }
+
+
 }

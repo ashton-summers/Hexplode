@@ -1,25 +1,27 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
 {
-    public List<Hexagon> Hexagons;
+    public List<Hexagon> Hexagons = new List<Hexagon>();
     public GameObject hexagonPrefab;
     public GameObject chargePrefab;
+    public CoreGameplay cg;
 
     //Color c = new Color(255, 51, 51);
     //mr.material.color = new Color32(255, 51, 51, 0);
 
- 
     private void Start()
     {
-        DrawBoard();
-        DrawCharges();
+        cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler);
+        cg.StartGame();
     }
 
     /// <summary>
-    /// 
+    /// Proceduraly draws the board on the screen
     /// </summary>
     private void DrawBoard()
     {
@@ -30,23 +32,25 @@ public class BoardManager : MonoBehaviour
             switch (i)
             {
                 case 1:
-                    DrawVertical(i, -4, 2);
+                    DrawVertical(i, -2, 2);
                     break;
                 case 2:
-                    DrawVertical(i, -3, 3);
+                    DrawVertical(i, -1, 3);
                     break;
                 case 3:
-                    DrawVertical(i, -2, 4);
+                    DrawVertical(i, 0, 4);
                     break;
                 case 4:
-                    DrawVertical(i - 2, -1, 3);
+                    DrawVertical(i - 2, 1, 3);
                     break;
                 case 5:
-                    DrawVertical(i - 4, 0, 2);
+                    DrawVertical(i - 4, 2, 2);
                     break;
 
             }
         }
+        DrawCharges();
+        AddAdjacentNeighbors();
     }
 
     /// <summary>
@@ -151,7 +155,8 @@ public class BoardManager : MonoBehaviour
         go = Instantiate(hexagonPrefab) as GameObject;
         go.transform.SetParent(transform);
         go.transform.position = vTemp;
-        Hexagon h = go.GetComponent<Hexagon>();
+        Hexagon h = new Hexagon();
+        h = go.GetComponent<Hexagon>();
         h.x = x; h.y = y;
 
         Hexagons.Add(h);
@@ -190,5 +195,163 @@ public class BoardManager : MonoBehaviour
        
     }
 
+    /// <summary>
+    /// Adds the adjacent neighbors to each of the lists of neighbors for each hexagon on the board
+    /// Could make this more efficient by dynamically reading this information from an xml script. Not
+    /// too worried about that though
+    /// </summary>
+    private void AddAdjacentNeighbors()
+    {
+        Hexagons[0].AdjacentNeighbors.Add(Hexagons[1]);
+        Hexagons[0].AdjacentNeighbors.Add(Hexagons[2]);
+
+        Hexagons[1].AdjacentNeighbors.Add(Hexagons[0]);
+        Hexagons[1].AdjacentNeighbors.Add(Hexagons[2]);
+        Hexagons[1].AdjacentNeighbors.Add(Hexagons[3]);
+        Hexagons[1].AdjacentNeighbors.Add(Hexagons[4]);
+
+        Hexagons[2].AdjacentNeighbors.Add(Hexagons[0]);
+        Hexagons[2].AdjacentNeighbors.Add(Hexagons[1]);
+        Hexagons[2].AdjacentNeighbors.Add(Hexagons[4]);
+        Hexagons[2].AdjacentNeighbors.Add(Hexagons[5]);
+
+        Hexagons[3].AdjacentNeighbors.Add(Hexagons[1]);
+        Hexagons[3].AdjacentNeighbors.Add(Hexagons[4]);
+        Hexagons[3].AdjacentNeighbors.Add(Hexagons[6]);
+
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[1]);
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[3]);
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[6]);
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[7]);
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[5]);
+        Hexagons[4].AdjacentNeighbors.Add(Hexagons[2]);
+
+        Hexagons[5].AdjacentNeighbors.Add(Hexagons[4]);
+        Hexagons[5].AdjacentNeighbors.Add(Hexagons[2]);
+        Hexagons[5].AdjacentNeighbors.Add(Hexagons[7]);
+
+        Hexagons[6].AdjacentNeighbors.Add(Hexagons[3]);
+        Hexagons[6].AdjacentNeighbors.Add(Hexagons[4]);
+        Hexagons[6].AdjacentNeighbors.Add(Hexagons[7]);
+        Hexagons[6].AdjacentNeighbors.Add(Hexagons[8]);
+
+        Hexagons[7].AdjacentNeighbors.Add(Hexagons[5]);
+        Hexagons[7].AdjacentNeighbors.Add(Hexagons[4]);
+        Hexagons[7].AdjacentNeighbors.Add(Hexagons[6]);
+        Hexagons[7].AdjacentNeighbors.Add(Hexagons[8]);
+
+        Hexagons[8].AdjacentNeighbors.Add(Hexagons[6]);
+        Hexagons[8].AdjacentNeighbors.Add(Hexagons[7]);
+
+    }
+
+    /// <summary>
+    /// Checks all of the hexagons to see if they have been clicked on or not.
+    /// If a hex has been clicked, this method will return true and the gameplay class will
+    /// call the board manager's helper method to change the color.
+    /// Anything handling hexagons and attribute changes will happen in the board manager class
+    /// This function returns a reference to the hexagon that was changed so we check for open charges from CoreGameplay
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    private Hexagon CheckCollisionChangeColor(int x, int y, Player player)
+    {
+        Hexagon retValue = null;
+        foreach (Hexagon hex in Hexagons)
+        {
+            // Check to see if x and y positions are at the location of the click
+            // Also check to make sure the hex has been clicked by the correct player
+            if (hex.x == x && hex.y == y)
+            {
+                if (hex.HexOwner == null)
+                {
+                    hex.HexOwner = player;
+                }
+                else if (hex.HexOwner.PlayerName != player.PlayerName)
+                {
+                    // Maybe display a prompt when we hit this case.
+                    // Opposite player cannot click and take a hex that has already been taken
+                    return hex;
+                }
+                    MeshRenderer mr = hex.GetComponent<MeshRenderer>();
+
+                    if (string.Equals(player.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase)) // If the player is player 1
+                    {
+                        mr.material.color = new Color32(255, 51, 51, 0); // Change to red
+                    }
+                    else // Player 2
+                    {
+                        mr.material.color = new Color32(0, 128, 255, 0); // Change to blue
+                    }
+                retValue = hex;
+            }
+        }
+
+        return retValue;
+
+    }
+
+    private void eventHandler(object sender, PropertyChangedEventArgs e)
+    {
+        if(e.PropertyName == "Start")
+        {
+            DrawBoard();
+        }
+        else if (e.PropertyName == "Mouse Clicked")
+        {
+            int mouseX = cg.GetMouseXPos();
+            int mouseY = cg.GetMouseYPos();
+            int index = -1;
+            Player currentPlayer = cg.GetCurrentPlayer();
+
+            Hexagon currentHex = CheckCollisionChangeColor(mouseX, mouseY, currentPlayer);
+
+            if(currentHex != null)
+            {
+                index = FindOpenCharge(currentHex);
+            }
+
+            if(index < 0) // There is no open charge. Means we should explode into adjacent neighbors
+            {
+                return;
+            }
+            else
+            {
+                Charge(index, currentHex);
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Charges the charge at the specified index
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="hex"></param>
+    private void Charge(int index, Hexagon hex)
+    {
+        MeshRenderer mr = hex.Charges[index].GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(255, 255, 255, 0); // Change the charge to white.
+        hex.Charges[index].IsCharged = true;
+    }
+
+    /// <summary>
+    /// Finds the first open charge that we can charge up, returns index of that charge
+    /// If this function return -1, then we need to explode this charge
+    /// </summary>
+    /// <param name="hex"></param>
+    /// <returns></returns>
+    private int FindOpenCharge(Hexagon hex)
+    {
+        for (int i = 0; i < hex.Charges.Count; i++)
+        {
+            if (!hex.Charges[i].IsCharged)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 }
 
