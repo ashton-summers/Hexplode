@@ -2,10 +2,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
 {
+
+    private static XDocument _doc = XDocument.Load("GameBoards.xml");
+    private XElement _smallBoard =_doc.Root.Element("SmallBoard");
     public List<Hexagon> Hexagons = new List<Hexagon>();
     public GameObject hexagonPrefab;
     public GameObject chargePrefab;
@@ -17,82 +23,98 @@ public class BoardManager : MonoBehaviour
     private void Start()
     {
         cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler);
-        cg.StartGame();
+        LoadBoard(true);
+        
     }
 
     /// <summary>
-    /// Proceduraly draws the board on the screen
+    /// Reads data from a .xml file and dynamically loads the board
     /// </summary>
-    private void DrawBoard()
+    /// <param name="size"></param>
+    private void LoadBoard(bool bigSmall) // small = true, big = false
     {
+        DrawHexagons(bigSmall);
+        DrawCharges(bigSmall);
+    }
 
-        // Have at most 5 columns for a small board. Can extend to make larger ones in future.
-        for (int i = 1; i < 6; i++)
+    /// <summary>
+    /// Will draw the hexagons given an XDocument to read from
+    /// </summary>
+    /// <param name="columns"></param>
+    private void DrawHexagons(bool bigSmall)
+    {
+        int x = -1, y = -1, numHexes = -1;
+        IEnumerable<XElement> boardColumns = null;
+
+        try
         {
-            switch (i)
+            if (bigSmall) // This means we are drawing the small board
             {
-                case 1:
-                    DrawVertical(i, -2, 2);
-                    break;
-                case 2:
-                    DrawVertical(i, -1, 3);
-                    break;
-                case 3:
-                    DrawVertical(i, 0, 4);
-                    break;
-                case 4:
-                    DrawVertical(i - 2, 1, 3);
-                    break;
-                case 5:
-                    DrawVertical(i - 4, 2, 2);
-                    break;
+                boardColumns = _smallBoard.Descendants().Where(attribute => attribute.Name == "Column"); // Grab all descendants with the name 'Column' under 'SmallBoard' tag
+            }
+            else
+            {
 
             }
+
+            // Iterate through the columns
+            foreach (var column in boardColumns)
+            {
+                x = int.Parse(column.Element("x").Value.ToString());
+                y = int.Parse(column.Element("y").Value.ToString());
+                numHexes = int.Parse(column.Element("numHexes").Value.ToString());
+                DrawVertical(numHexes, x, y);
+            }
         }
-        DrawCharges();
-        AddAdjacentNeighbors();
+        catch(Exception e)
+        {
+            throw new Exception(e.Message);
+        }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    private void DrawCharges()
+    /// <param name="doc"></param>
+    private void DrawCharges(bool bigSmall)
     {
-        MeshRenderer m = new MeshRenderer();
-        for (int i = 0; i < Hexagons.Count; i++)
+        int hexIndex = -1, numRows = -1;
+        string drawThree = string.Empty;
+        IEnumerable<XElement> charges = null;
+
+        try
         {
-            Hexagon temp = Hexagons[i];
-            switch (i)
+            if (bigSmall) // We are drawing the small board
             {
-                case 0:
-                    DrawTwo(temp, 1);
-                    break;
-                case 1:
-                   DrawTwo(temp, 2);
-                    break;
-                case 2:
-                    DrawTwo(temp, 2);
-                    break;
-                case 3:
-                    DrawThree(temp);
-                    break;
-                case 4:
-                    DrawTwo(temp, 3);
-                    break;
-                case 5:
-                    DrawThree(temp);
-                    break;
-                case 6:
-                    DrawTwo(temp, 2);
-                    break;
-                case 7:
-                    DrawTwo(temp, 2);
-                    break;
-                case 8:
-                    DrawTwo(temp, 1);
-                    break;
+                charges = _smallBoard.Descendants().Where(attribute => attribute.Name == "Charge");
+            }
+            else // Big board 
+            {
 
             }
+
+
+            // Iterate through all the charge tags
+            foreach (var chargesToDraw in charges)
+            {
+                hexIndex = int.Parse(chargesToDraw.Element("hexIndex").Value.ToString());
+                numRows = int.Parse(chargesToDraw.Element("numRows").Value.ToString());
+                drawThree = chargesToDraw.Element("draw3").Value.ToString();
+
+                if (string.Equals(drawThree, "true", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    DrawThree(Hexagons[hexIndex]);
+                }
+                else
+                {
+                    DrawTwo(Hexagons[hexIndex], numRows);
+                }
+
+            }
+        }
+        catch(Exception e)
+        {
+            throw new Exception(e.Message);
         }
     }
 
@@ -125,7 +147,7 @@ public class BoardManager : MonoBehaviour
         DrawTwo(temp, 1);
     }
 
-   
+
 
     // Draws a vertical line of hexagons based on the x and y given. Draws number of hexagons specified.
     // This will be useful if we want to extend to make larger boards.
@@ -182,7 +204,7 @@ public class BoardManager : MonoBehaviour
 
         Hexagon h = go.GetComponent<Hexagon>();
         h.x = x; h.y = y;
-        
+
         // Scale the charges down so they are small and set their position.
         go.transform.localScale = new Vector3(0.06f, 0.03f, 1f);
         go.transform.position = chargeTemp;
@@ -192,7 +214,7 @@ public class BoardManager : MonoBehaviour
         mr.material.color = new Color32(32, 32, 32, 0);
 
         hex.Charges.Add(h);
-       
+
     }
 
     /// <summary>
@@ -257,6 +279,7 @@ public class BoardManager : MonoBehaviour
     private Hexagon CheckCollisionChangeColor(int x, int y, Player player)
     {
         Hexagon retValue = null;
+        bool tryAgain = false;
         foreach (Hexagon hex in Hexagons)
         {
             // Check to see if x and y positions are at the location of the click
@@ -271,53 +294,68 @@ public class BoardManager : MonoBehaviour
                 {
                     // Maybe display a prompt when we hit this case.
                     // Opposite player cannot click and take a hex that has already been taken
-                    return hex;
+                    tryAgain = true;
                 }
+
+                if(!tryAgain)
+                {
                     MeshRenderer mr = hex.GetComponent<MeshRenderer>();
 
                     if (string.Equals(player.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase)) // If the player is player 1
                     {
-                        mr.material.color = new Color32(255, 51, 51, 0); // Change to red
+                        ChangeToRed(hex); // Change to red
                     }
                     else // Player 2
                     {
-                        mr.material.color = new Color32(0, 128, 255, 0); // Change to blue
+                        ChangeToBlue(hex); // Change to blue
                     }
-                retValue = hex;
+                    retValue = hex;
+                    tryAgain = false;
+                }
+               
+
             }
+        }
+
+        if (tryAgain)
+        {
+            TryAgain();
         }
 
         return retValue;
 
     }
 
+    /// <summary>
+    /// Method that is called whenever an event happens
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void eventHandler(object sender, PropertyChangedEventArgs e)
     {
-        if(e.PropertyName == "Start")
-        {
-            DrawBoard();
-        }
-        else if (e.PropertyName == "Mouse Clicked")
+       
+        if (e.PropertyName == "Mouse Clicked")
         {
             int mouseX = cg.GetMouseXPos();
             int mouseY = cg.GetMouseYPos();
-            int index = -1;
+            int index = -5;
             Player currentPlayer = cg.GetCurrentPlayer();
 
             Hexagon currentHex = CheckCollisionChangeColor(mouseX, mouseY, currentPlayer);
 
-            if(currentHex != null)
+            if (currentHex != null)
             {
                 index = FindOpenCharge(currentHex);
+                Charge(index, currentHex);
+                index = FindOpenCharge(currentHex); // Check to see if there are no more open charges after charge
             }
 
-            if(index < 0) // There is no open charge. Means we should explode into adjacent neighbors
+
+            if (index == -1)
             {
-                return;
-            }
-            else
-            {
-                Charge(index, currentHex);
+                ExplodeAdjacentNeighbors(currentHex, currentPlayer);
+                ResetExplodedHex(currentHex);
+                CheckAdjacentForExplosion(currentHex);
             }
         }
 
@@ -353,5 +391,226 @@ public class BoardManager : MonoBehaviour
 
         return -1;
     }
+
+    /// <summary>
+    /// Changes all adjacent neighbors of exploding hex to that color of the player who
+    /// exploded the hexagon
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ExplodeAdjacentNeighbors(Hexagon hex, Player player)
+    {
+        int index = -1;
+
+        if(string.Equals(hex.HexOwner.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase))
+        {
+            StartCoroutine(FlashRedHexOnExplosion(hex));
+        }
+        else
+        {
+            StartCoroutine(FlashBlueHexOnExplosion(hex));
+        }
+        
+        for (int i = 0; i < hex.AdjacentNeighbors.Count; i++)
+        {
+            hex.AdjacentNeighbors[i].IsCharged = true;
+            hex.AdjacentNeighbors[i].HexOwner = player;
+            index = FindOpenCharge(hex.AdjacentNeighbors[i]);
+
+
+            if (string.Equals(player.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase))
+            {
+                ChangeToRed(hex.AdjacentNeighbors[i]);
+                if (index >= 0) // We need to add 1 charge to all adjacent hexagons, so make sure there is an open charge
+                {
+                    Charge(index, hex.AdjacentNeighbors[i]);
+                }
+            }
+            else
+            {
+                ChangeToBlue(hex.AdjacentNeighbors[i]);
+                if (index >= 0) // We need to add 1 charge to all adjacent hexagons, so make sure there is an open charge
+                {
+                    Charge(index, hex.AdjacentNeighbors[i]);
+                }
+            }
+
+        }
+    }
+
+    /// <summary>
+    /// Changes hex color to red
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ChangeToRed(Hexagon hex)
+    {
+        MeshRenderer mr = hex.GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(204, 0, 0, 0);
+    }
+
+    /// <summary>
+    /// Changes hex color to red
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ChangeToBlue(Hexagon hex)
+    {
+        MeshRenderer mr = hex.GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(0, 76, 153, 0);
+    }
+
+    /// <summary>
+    /// Changes hex color to light blue. WIll be
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ChangeToLightBlue(Hexagon hex)
+    {
+        MeshRenderer mr = hex.GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(204, 255, 255, 0);
+    }
+
+
+    /// <summary>
+    /// Changes hex color to light blue. WIll be
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ChangeToLightRed(Hexagon hex)
+    {
+        MeshRenderer mr = hex.GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(255, 204, 204, 0);
+    }
+
+
+
+    /// <summary>
+    /// Resets all of the charges to their default colors
+    /// Also resets the hex that just exploded
+    /// </summary>
+    /// <param name="hex"></param>
+    private void ResetExplodedHex(Hexagon hex)
+    {
+        MeshRenderer mr;
+        mr = hex.GetComponent<MeshRenderer>();
+        mr.material.color = new Color32(137, 137, 137, 0); // Change color back to default
+
+        hex.HexOwner = null; // Nobody owns this hex anymore, so set to null
+
+        // Reset all the charges back to default
+        foreach (Hexagon charge in hex.Charges)
+        {
+            mr = charge.GetComponent<MeshRenderer>();
+            mr.material.color = new Color32(32, 32, 32, 0); // Change back to grey
+            charge.IsCharged = false;
+        }
+
+    }
+
+    /// <summary>
+    /// Will check the adjacent neighbors of a recently exploded hexagon
+    /// to see if it needs to explode. If it does, then we will explode the adjacent neighbors of that hex
+    /// </summary>
+    /// <param name="hex"></param>
+    private void CheckAdjacentForExplosion(Hexagon hex)
+    {
+        int index = -1;
+
+        // TODO: check to see if game has been won to we can get out of the loop
+       // This is to avoid infinite explosions and stack overflow
+        if(!isExplosionAvailable(hex))
+        {
+            return;
+        }
+
+        foreach (Hexagon neighbor in hex.AdjacentNeighbors)
+        {
+            index = FindOpenCharge(neighbor);
+
+            if (index < 0)
+            {
+                ExplodeAdjacentNeighbors(neighbor, cg.GetCurrentPlayer());
+                ResetExplodedHex(neighbor);
+                CheckAdjacentForExplosion(neighbor);
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Will tell us whether or not an avilable explosion exists.
+    /// WIll be the base case for CheckAdjacentExplosion
+    /// </summary>
+    private bool isExplosionAvailable(Hexagon hex)
+    {
+        bool retVal = false;
+        foreach(Hexagon neighbor in hex.AdjacentNeighbors)
+        {
+            int index = FindOpenCharge(neighbor);
+            if(index < 0)
+            {
+                retVal = true;
+            }
+        }
+
+        return retVal;
+    }
+
+    /// <summary>
+    /// If a player clicks on a hex that is not theirs, we do not want to switch turns.
+    /// So we need to call a method in core gameplay that retries with the current player
+    /// </summary>
+    private void TryAgain()
+    {
+        cg.TryAgain();
+    }
+
+
+    /// <summary>
+    /// Will change color from light red to red multiple times to simulate flashing
+    /// before the hex explodes into adjacent neighbors
+    /// </summary>
+    /// <param name="hex"></param>
+    private IEnumerator FlashRedHexOnExplosion(Hexagon hex)
+    {
+        ChangeToLightRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToLightRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToLightRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToRed(hex);
+        yield return new WaitForSeconds(.09f);
+        ResetExplodedHex(hex);
+
+    }
+
+
+    /// <summary>
+    /// Will change color from light blue to blue multiple times to simulate flashing
+    /// before the hex explodes into adjacent neighbors
+    /// </summary>
+    /// <param name="hex"></param>
+    private IEnumerator FlashBlueHexOnExplosion(Hexagon hex)
+    {
+        ChangeToLightBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToLightBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToLightBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ChangeToBlue(hex);
+        yield return new WaitForSeconds(.09f);
+        ResetExplodedHex(hex);
+
+    }
+
+
+
 }
+
 

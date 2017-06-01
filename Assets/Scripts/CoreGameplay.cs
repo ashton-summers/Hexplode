@@ -12,13 +12,13 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     private Player _player1 = new Player("player1", "Red");
     private Player _player2 = new Player("player2", "blue");
     private Player _currentPlayer;
+    private bool _player1Turn = true;
     public event PropertyChangedEventHandler PropertyChanged;
 
     // Use this for initialization
     public void StartGame ()
     {
-
-        NotifyPropertyChanged(this, "Start");
+      
         mouseOver = new Vector2();
 		
 	}
@@ -43,6 +43,7 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     /// </summary>
     private void Update()
     {
+        
         UpdateMouseOver();
 
         int x = (int)mouseOver.x;
@@ -52,10 +53,18 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
         // Maybe add AI
         if (Input.GetMouseButtonDown(0))
         {
-            _currentPlayer = _player1;
+            
+            if(_player1Turn)
+            {
+                _currentPlayer = _player1;
+                _player1Turn = false;
+            }
+            else // It is player two's turn
+            {
+                _currentPlayer = _player2;
+                _player1Turn = true;
+            }
             NotifyPropertyChanged(this, "Mouse Clicked");
-
-           
         }
 
     }
@@ -106,6 +115,22 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     public Player GetCurrentPlayer()
     {
         return _currentPlayer;
+    }
+
+    /// <summary>
+    /// If a player doesn't click on a hex or clicks on a hex
+    /// that is not theirs, we need to switch back to their turn
+    /// </summary>
+    public void TryAgain()
+    {
+        if(_currentPlayer.PlayerName == "player1")
+        {
+            _currentPlayer = _player2;
+        }
+        else
+        {
+            _currentPlayer = _player2;
+        }
     }
 
 }

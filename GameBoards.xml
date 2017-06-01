@@ -1,0 +1,112 @@
+<Game>
+	<SmallBoard>
+		<Column>
+			<x>-2</x>
+			<y>2</y>
+			<numHexes>1</numHexes>
+		</Column>
+		<Column>
+			<x>-1</x>
+			<y>3</y>
+			<numHexes>2</numHexes>
+		</Column>
+		<Column>
+			<x>0</x>
+			<y>4</y>
+			<numHexes>3</numHexes>
+		</Column>
+		<Column>
+			<x>1</x>
+			<y>3</y>
+			<numHexes>2</numHexes>
+		</Column>
+		<Column>
+			<x>2</x>
+			<y>2</y>
+			<numHexes>1</numHexes>
+		</Column>
+		<Charge> 
+			<numRows>1</numRows>
+			<hexIndex>0</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>2</numRows>
+			<hexIndex>1</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>2</numRows>
+			<hexIndex>2</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>-1</numRows>
+			<hexIndex>3</hexIndex>
+			<draw3>true</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>3</numRows>
+			<hexIndex>4</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>-1</numRows>
+			<hexIndex>5</hexIndex>
+			<draw3>true</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>2</numRows>
+			<hexIndex>6</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>2</numRows>
+			<hexIndex>7</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<Charge> 
+			<numRows>1</numRows>
+			<hexIndex>8</hexIndex>
+			<draw3>false</draw3>
+		</Charge>
+		<neighbors>
+			<hex>
+				<index>0</index>
+				<neighbors> 1, 2</neighbors>
+			</hex>
+			<hex>
+				<index>1</index>
+				<neighbors> 0, 2, 3, 4</neighbors>
+			</hex>
+			<hex>
+				<index>2</index>
+				<neighbors> 0, 1, 4, 5</neighbors>
+			</hex>
+			<hex>
+				<index>3</index>
+				<neighbors> 1, 4, 6</neighbors>
+			</hex>
+			<hex>
+				<index>4</index>
+				<neighbors> 1, 2, 3, 5, 6, 7</neighbors>
+			</hex>
+			<hex>
+				<index>5</index>
+				<neighbors> 2, 4, 7</neighbors>
+			</hex>
+			<hex>
+				<index>6</index>
+				<neighbors> 3, 4, 7, 8</neighbors>
+			</hex>
+			<hex>
+				<index>7</index>
+				<neighbors> 5, 4, 6, 8</neighbors>
+			</hex>
+			<hex>
+				<index>8</index>
+				<neighbors> 6, 7</neighbors>
+			</hex>
+		</neighbors>
+	</SmallBoard>
+</Game>
