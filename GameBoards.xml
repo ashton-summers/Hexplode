@@ -73,39 +73,39 @@
 		<neighbors>
 			<hex>
 				<index>0</index>
-				<neighbors> 1, 2</neighbors>
+				<neighborList> 1, 2</neighborList>
 			</hex>
 			<hex>
 				<index>1</index>
-				<neighbors> 0, 2, 3, 4</neighbors>
+				<neighborList> 0, 2, 3, 4</neighborList>
 			</hex>
 			<hex>
 				<index>2</index>
-				<neighbors> 0, 1, 4, 5</neighbors>
+				<neighborList> 0, 1, 4, 5</neighborList>
 			</hex>
 			<hex>
 				<index>3</index>
-				<neighbors> 1, 4, 6</neighbors>
+				<neighborList> 1, 4, 6</neighborList>
 			</hex>
 			<hex>
 				<index>4</index>
-				<neighbors> 1, 2, 3, 5, 6, 7</neighbors>
+				<neighborList> 1, 2, 3, 5, 6, 7</neighborList>
 			</hex>
 			<hex>
 				<index>5</index>
-				<neighbors> 2, 4, 7</neighbors>
+				<neighborList> 2, 4, 7</neighborList>
 			</hex>
 			<hex>
 				<index>6</index>
-				<neighbors> 3, 4, 7, 8</neighbors>
+				<neighborList> 3, 4, 7, 8</neighborList>
 			</hex>
 			<hex>
 				<index>7</index>
-				<neighbors> 5, 4, 6, 8</neighbors>
+				<neighborList> 5, 4, 6, 8</neighborList>
 			</hex>
 			<hex>
 				<index>8</index>
-				<neighbors> 6, 7</neighbors>
+				<neighborList> 6, 7</neighborList>
 			</hex>
 		</neighbors>
 	</SmallBoard>

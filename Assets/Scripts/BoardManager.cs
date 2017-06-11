@@ -12,17 +12,16 @@ public class BoardManager : MonoBehaviour
 
     private static XDocument _doc = XDocument.Load("GameBoards.xml");
     private XElement _smallBoard =_doc.Root.Element("SmallBoard");
+    private XElement _bigBoard = _doc.Root.Element("BigBoard");
     public List<Hexagon> Hexagons = new List<Hexagon>();
     public GameObject hexagonPrefab;
     public GameObject chargePrefab;
     public CoreGameplay cg;
-
-    //Color c = new Color(255, 51, 51);
-    //mr.material.color = new Color32(255, 51, 51, 0);
+    
 
     private void Start()
     {
-        cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler);
+        cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler); // Subscribe to CoreGameplay's event system
         LoadBoard(true);
         
     }
@@ -35,6 +34,7 @@ public class BoardManager : MonoBehaviour
     {
         DrawHexagons(bigSmall);
         DrawCharges(bigSmall);
+        AddAdjacentNeighbors(bigSmall);
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public class BoardManager : MonoBehaviour
             }
             else // Big board 
             {
-
+                charges = _bigBoard.Descendants().Where(attribute => attribute.Name == "Charge");
             }
 
 
@@ -116,6 +116,62 @@ public class BoardManager : MonoBehaviour
         {
             throw new Exception(e.Message);
         }
+    }
+
+    /// <summary>
+    /// Adds the adjacent neighbors to each of the lists of neighbors for each hexagon on the board.
+    /// Reads the information from the xml file which gives an index to the hex to add neighbors to
+    /// as well as the neighbors of that hexagon in a string that will be parsed
+    /// </summary>
+    private void AddAdjacentNeighbors(bool bigSmall)
+    {
+        XElement neighborElement = null;
+        IEnumerable<XElement> hexesToAddNeighbors = null;
+        IEnumerable<string> neighborsList = null;
+
+        int index = -1;
+        string neighborsString = string.Empty;
+
+        if(bigSmall) // We are reading information for the small board
+        {
+            neighborElement = _smallBoard.Element("neighbors");
+        }
+        else // big board
+        {
+            neighborElement = _bigBoard.Element("neighbors");
+        }
+
+        // Grab the list of elements that contain the index of the hex to add neighbors to as well as the 
+        // string containing the neighbors to add
+        hexesToAddNeighbors = neighborElement.Descendants().Where(attribute => attribute.Name == "hex");
+
+        // Iterate through list of hexes that we need to add neighbors to
+        foreach(var hex in hexesToAddNeighbors)
+        {
+            index = int.Parse(hex.Element("index").Value.ToString());
+            neighborsString = hex.Element("neighborList").Value.ToString();
+            neighborsList = parseNeigborsString(neighborsString);
+
+            // Iterate through neighbors list. Max number of neighbors is 6
+            foreach(var neighborIndex in neighborsList)
+            {
+                var neighbor = Hexagons[Convert.ToInt32(neighborIndex)];
+                Hexagons[index].AdjacentNeighbors.Add(neighbor);
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Will parse the string containing the neighbors to add to the hex, convert to ints, and return a list
+    /// of those integers. Neighbors are comma-separated
+    /// </summary>
+    /// <param name="neighborsString"></param>
+    /// <returns></returns>
+    private IEnumerable<string> parseNeigborsString(string neighborsString)
+    {
+        IEnumerable<string> values = neighborsString.Split(',');
+        return values;
     }
 
     /// <summary>
@@ -217,55 +273,7 @@ public class BoardManager : MonoBehaviour
 
     }
 
-    /// <summary>
-    /// Adds the adjacent neighbors to each of the lists of neighbors for each hexagon on the board
-    /// Could make this more efficient by dynamically reading this information from an xml script. Not
-    /// too worried about that though
-    /// </summary>
-    private void AddAdjacentNeighbors()
-    {
-        Hexagons[0].AdjacentNeighbors.Add(Hexagons[1]);
-        Hexagons[0].AdjacentNeighbors.Add(Hexagons[2]);
-
-        Hexagons[1].AdjacentNeighbors.Add(Hexagons[0]);
-        Hexagons[1].AdjacentNeighbors.Add(Hexagons[2]);
-        Hexagons[1].AdjacentNeighbors.Add(Hexagons[3]);
-        Hexagons[1].AdjacentNeighbors.Add(Hexagons[4]);
-
-        Hexagons[2].AdjacentNeighbors.Add(Hexagons[0]);
-        Hexagons[2].AdjacentNeighbors.Add(Hexagons[1]);
-        Hexagons[2].AdjacentNeighbors.Add(Hexagons[4]);
-        Hexagons[2].AdjacentNeighbors.Add(Hexagons[5]);
-
-        Hexagons[3].AdjacentNeighbors.Add(Hexagons[1]);
-        Hexagons[3].AdjacentNeighbors.Add(Hexagons[4]);
-        Hexagons[3].AdjacentNeighbors.Add(Hexagons[6]);
-
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[1]);
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[3]);
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[6]);
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[7]);
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[5]);
-        Hexagons[4].AdjacentNeighbors.Add(Hexagons[2]);
-
-        Hexagons[5].AdjacentNeighbors.Add(Hexagons[4]);
-        Hexagons[5].AdjacentNeighbors.Add(Hexagons[2]);
-        Hexagons[5].AdjacentNeighbors.Add(Hexagons[7]);
-
-        Hexagons[6].AdjacentNeighbors.Add(Hexagons[3]);
-        Hexagons[6].AdjacentNeighbors.Add(Hexagons[4]);
-        Hexagons[6].AdjacentNeighbors.Add(Hexagons[7]);
-        Hexagons[6].AdjacentNeighbors.Add(Hexagons[8]);
-
-        Hexagons[7].AdjacentNeighbors.Add(Hexagons[5]);
-        Hexagons[7].AdjacentNeighbors.Add(Hexagons[4]);
-        Hexagons[7].AdjacentNeighbors.Add(Hexagons[6]);
-        Hexagons[7].AdjacentNeighbors.Add(Hexagons[8]);
-
-        Hexagons[8].AdjacentNeighbors.Add(Hexagons[6]);
-        Hexagons[8].AdjacentNeighbors.Add(Hexagons[7]);
-
-    }
+  
 
     /// <summary>
     /// Checks all of the hexagons to see if they have been clicked on or not.
@@ -276,15 +284,20 @@ public class BoardManager : MonoBehaviour
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
-    private Hexagon CheckCollisionChangeColor(int x, int y, Player player)
+    private Hexagon CheckCollisionChangeColor(float x, float y, Player player)
     {
         Hexagon retValue = null;
         bool tryAgain = false;
+        float yUpperBound = 0, yLowerBound = 0, xLeftBound = 0, xRightBound = 0;
         foreach (Hexagon hex in Hexagons)
         {
+            yUpperBound = (hex.y - 1f);
+            yLowerBound = (hex.y + 0.5f);
+            xLeftBound = (hex.x - 0.6f);
+            xRightBound = (hex.x + 0.6f);
             // Check to see if x and y positions are at the location of the click
             // Also check to make sure the hex has been clicked by the correct player
-            if (hex.x == x && hex.y == y)
+            if ((x > xLeftBound && x < xRightBound) && (y > yUpperBound && y < yLowerBound))
             {
                 if (hex.HexOwner == null)
                 {
@@ -299,7 +312,6 @@ public class BoardManager : MonoBehaviour
 
                 if(!tryAgain)
                 {
-                    MeshRenderer mr = hex.GetComponent<MeshRenderer>();
 
                     if (string.Equals(player.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase)) // If the player is player 1
                     {
@@ -312,7 +324,6 @@ public class BoardManager : MonoBehaviour
                     retValue = hex;
                     tryAgain = false;
                 }
-               
 
             }
         }
@@ -334,10 +345,10 @@ public class BoardManager : MonoBehaviour
     private void eventHandler(object sender, PropertyChangedEventArgs e)
     {
        
-        if (e.PropertyName == "Mouse Clicked")
+        if (string.Equals(e.PropertyName, "Mouse Clicked", StringComparison.InvariantCultureIgnoreCase))
         {
-            int mouseX = cg.GetMouseXPos();
-            int mouseY = cg.GetMouseYPos();
+            float mouseX = cg.GetMouseXPos();
+            float mouseY = cg.GetMouseYPos();
             int index = -5;
             Player currentPlayer = cg.GetCurrentPlayer();
 
@@ -353,11 +364,12 @@ public class BoardManager : MonoBehaviour
 
             if (index == -1)
             {
-                ExplodeAdjacentNeighbors(currentHex, currentPlayer);
+                StartCoroutine (ExplodeAdjacentNeighbors(currentHex, currentPlayer));
                 ResetExplodedHex(currentHex);
-                CheckAdjacentForExplosion(currentHex);
+               
             }
         }
+
 
     }
 
@@ -397,18 +409,19 @@ public class BoardManager : MonoBehaviour
     /// exploded the hexagon
     /// </summary>
     /// <param name="hex"></param>
-    private void ExplodeAdjacentNeighbors(Hexagon hex, Player player)
+    private IEnumerator ExplodeAdjacentNeighbors(Hexagon hex, Player player)
     {
         int index = -1;
 
         if(string.Equals(hex.HexOwner.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase))
         {
-            StartCoroutine(FlashRedHexOnExplosion(hex));
+            yield return(StartCoroutine(FlashRedHexOnExplosion(hex)));
         }
         else
         {
-            StartCoroutine(FlashBlueHexOnExplosion(hex));
+            yield return (StartCoroutine(FlashBlueHexOnExplosion(hex)));
         }
+        
         
         for (int i = 0; i < hex.AdjacentNeighbors.Count; i++)
         {
@@ -435,6 +448,8 @@ public class BoardManager : MonoBehaviour
             }
 
         }
+
+        CheckBoardForExplosion(); // After we explode into adjacent neighbors, see if we have other explosions
     }
 
     /// <summary>
@@ -508,49 +523,24 @@ public class BoardManager : MonoBehaviour
     /// to see if it needs to explode. If it does, then we will explode the adjacent neighbors of that hex
     /// </summary>
     /// <param name="hex"></param>
-    private void CheckAdjacentForExplosion(Hexagon hex)
+    private void CheckBoardForExplosion()
     {
-        int index = -1;
+        int index = -5;
 
-        // TODO: check to see if game has been won to we can get out of the loop
-       // This is to avoid infinite explosions and stack overflow
-        if(!isExplosionAvailable(hex))
+        foreach(Hexagon hex in Hexagons)
         {
-            return;
-        }
+            index = FindOpenCharge(hex);
 
-        foreach (Hexagon neighbor in hex.AdjacentNeighbors)
-        {
-            index = FindOpenCharge(neighbor);
-
-            if (index < 0)
+            if(index < 0) // If there is an explosion available
             {
-                ExplodeAdjacentNeighbors(neighbor, cg.GetCurrentPlayer());
-                ResetExplodedHex(neighbor);
-                CheckAdjacentForExplosion(neighbor);
+                StartCoroutine(ExplodeAdjacentNeighbors(hex, cg.GetCurrentPlayer()));
             }
         }
 
+
     }
 
-    /// <summary>
-    /// Will tell us whether or not an avilable explosion exists.
-    /// WIll be the base case for CheckAdjacentExplosion
-    /// </summary>
-    private bool isExplosionAvailable(Hexagon hex)
-    {
-        bool retVal = false;
-        foreach(Hexagon neighbor in hex.AdjacentNeighbors)
-        {
-            int index = FindOpenCharge(neighbor);
-            if(index < 0)
-            {
-                retVal = true;
-            }
-        }
-
-        return retVal;
-    }
+    
 
     /// <summary>
     /// If a player clicks on a hex that is not theirs, we do not want to switch turns.

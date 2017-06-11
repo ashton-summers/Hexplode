@@ -48,6 +48,7 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
 
         int x = (int)mouseOver.x;
         int y = (int)mouseOver.y;
+        NotifyPropertyChanged(this, "New Frame");
 
         // TODO: add logic for two player game later
         // Maybe add AI
@@ -80,8 +81,8 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
         // If we are interacting with the board, update the Vector2 for mouse position
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100.0f, LayerMask.GetMask("Hex")))
         {
-            mouseOver.x = (int)hit.point.x;
-            mouseOver.y = (int)hit.point.y;
+            mouseOver.x = hit.point.x;
+            mouseOver.y = hit.point.y;
         }
         else
         {
@@ -94,18 +95,18 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     /// Returns the current mouse x pos
     /// </summary>
     /// <returns></returns>
-    public int GetMouseXPos()
+    public float GetMouseXPos()
     {
-        return Convert.ToInt32(mouseOver.x);
+        return mouseOver.x;
     }
 
     /// <summary>
     /// Returns the current mouse y pos
     /// </summary>
     /// <returns></returns>
-    public int GetMouseYPos()
+    public float GetMouseYPos()
     {
-        return Convert.ToInt32(mouseOver.y);
+        return mouseOver.y;
     }
 
     /// <summary>
