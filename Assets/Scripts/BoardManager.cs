@@ -7,7 +7,7 @@ using System.Xml;
 using System.Xml.Linq;
 using UnityEngine;
 
-public class BoardManager : MonoBehaviour
+public class BoardManager : MonoBehaviour, INotifyPropertyChanged
 {
 
     private static XDocument _doc = XDocument.Load("GameBoards.xml");
@@ -17,13 +17,14 @@ public class BoardManager : MonoBehaviour
     public GameObject hexagonPrefab;
     public GameObject chargePrefab;
     public CoreGameplay cg;
-    
+    private AI _ai;
+
+    public event PropertyChangedEventHandler PropertyChanged;
 
     private void Start()
     {
         cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler); // Subscribe to CoreGameplay's event system
         LoadBoard(true);
-        
     }
 
     /// <summary>
@@ -288,17 +289,21 @@ public class BoardManager : MonoBehaviour
     {
         Hexagon retValue = null;
         bool tryAgain = false;
+        bool clickedOnHex = false;
         float yUpperBound = 0, yLowerBound = 0, xLeftBound = 0, xRightBound = 0;
         foreach (Hexagon hex in Hexagons)
         {
+
             yUpperBound = (hex.y - 1f);
             yLowerBound = (hex.y + 0.5f);
             xLeftBound = (hex.x - 0.6f);
             xRightBound = (hex.x + 0.6f);
+
             // Check to see if x and y positions are at the location of the click
             // Also check to make sure the hex has been clicked by the correct player
             if ((x > xLeftBound && x < xRightBound) && (y > yUpperBound && y < yLowerBound))
             {
+                clickedOnHex = true;
                 if (hex.HexOwner == null)
                 {
                     hex.HexOwner = player;
@@ -316,10 +321,12 @@ public class BoardManager : MonoBehaviour
                     if (string.Equals(player.PlayerName, "player1", StringComparison.InvariantCultureIgnoreCase)) // If the player is player 1
                     {
                         ChangeToRed(hex); // Change to red
+                        cg.ResetTryAgain(); // If we have tried a move again, must reset because the move is now successful
                     }
                     else // Player 2
                     {
                         ChangeToBlue(hex); // Change to blue
+                        cg.ResetTryAgain();
                     }
                     retValue = hex;
                     tryAgain = false;
@@ -328,7 +335,11 @@ public class BoardManager : MonoBehaviour
             }
         }
 
-        if (tryAgain)
+        if(!clickedOnHex) // If the user clicked somewhere that is not a hex location
+        {
+            TryAgain();
+        }
+        else if (tryAgain) // If the user clicked on a hex that is not theirs
         {
             TryAgain();
         }
@@ -369,9 +380,8 @@ public class BoardManager : MonoBehaviour
                
             }
         }
-
-
     }
+
 
     /// <summary>
     /// Charges the charge at the specified index
@@ -450,6 +460,8 @@ public class BoardManager : MonoBehaviour
         }
 
         CheckBoardForExplosion(); // After we explode into adjacent neighbors, see if we have other explosions
+        CheckIfBlueWon();
+        CheckIfRedWon();
     }
 
     /// <summary>
@@ -537,7 +549,6 @@ public class BoardManager : MonoBehaviour
             }
         }
 
-
     }
 
     
@@ -599,7 +610,61 @@ public class BoardManager : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Notifies subscribers when an important event happens.
+    /// This will be used to tell the CoreGameplay class that the game has ended.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="eventHappened"></param>
+    private void NotifyPropertyChanged(object sender, string eventHappened)
+    {
+        if (PropertyChanged != null)
+        {
+            PropertyChanged(sender, new PropertyChangedEventArgs(eventHappened));
+        }
+    }
 
+    /// <summary>
+    /// Checks to see if the blue player won. If so, notify subscribers that this game state has changed
+    /// </summary>
+    private void CheckIfBlueWon()
+    {
+        foreach(Hexagon hex in Hexagons)
+        {
+            if(hex.HexOwner != null && string.Equals(hex.HexOwner.PlayerColor, "red", StringComparison.InvariantCultureIgnoreCase)) // found a red hex, blue player hasn't won
+            {
+                return;
+            }
+        }
+
+        NotifyPropertyChanged(this, "blue wins");
+    }
+
+    /// <summary>
+    /// Checks to see if the red player won. If so, notify subscribers that this game state has changed
+    /// </summary>
+    private void CheckIfRedWon()
+    {
+        foreach (Hexagon hex in Hexagons)
+        {
+            if (hex.HexOwner != null && string.Equals(hex.HexOwner.PlayerColor, "blue", StringComparison.InvariantCultureIgnoreCase)) // found a blue hex, red player hasn't won
+            {
+                return;
+            }
+        }
+
+        NotifyPropertyChanged(this, "red wins");
+    }
+
+    /// <summary>
+    /// Set the AI object used in the coregameplay object
+    /// </summary>
+    /// <param name="newAI"></param>
+    public void SetAI(AI newAI)
+    {
+        _ai = newAI;
+        _ai.PropertyChanged += new PropertyChangedEventHandler(eventHandler); // Subscribe to the AI's event system. May need to add check to see if ai is a part of game
+    }
 
 }
 

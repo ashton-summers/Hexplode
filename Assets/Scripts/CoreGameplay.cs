@@ -2,25 +2,35 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
 
 public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
 {
 
     
-    private Vector2 mouseOver;
-    private Player _player1 = new Player("player1", "Red");
+    private Vector2 _mouseOver;
+    private Player _player1 = new Player("player1", "red");
     private Player _player2 = new Player("player2", "blue");
-    private Player _currentPlayer;
-    private bool _player1Turn = true;
+    private AI _ai = new AI("player2", "blue");
+    private bool _tryAgain = false;
+    private bool _aiGame = true;
+    private bool _player1TurnOver = false;
+    public Player _currentPlayer;
+    public bool _player1Turn = true;
+    public BoardManager boardManager;
     public event PropertyChangedEventHandler PropertyChanged;
 
     // Use this for initialization
-    public void StartGame ()
+    public void Start()
     {
-      
-        mouseOver = new Vector2();
-		
+        _mouseOver = new Vector2();
+
+        // Subscribe to the board manager's event notification system
+        boardManager.PropertyChanged += new PropertyChangedEventHandler(EventHandler);
+        boardManager.SetAI(_ai);
 	}
 
     /// <summary>
@@ -46,30 +56,67 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
         
         UpdateMouseOver();
 
-        int x = (int)mouseOver.x;
-        int y = (int)mouseOver.y;
-        NotifyPropertyChanged(this, "New Frame");
+        int x = (int)_mouseOver.x;
+        int y = (int)_mouseOver.y;
 
-        // TODO: add logic for two player game later
-        // Maybe add AI
-        if (Input.GetMouseButtonDown(0))
+        if(_aiGame)
+        {
+            if ((_player1Turn || _tryAgain) && _ai.turnIsOver) // If it's player one's turn or player 1 needs to try a move again
+            {
+                if (Input.GetMouseButtonDown(0))
+                {
+                    _currentPlayer = _player1;
+                    _player1TurnOver = false;
+                    NotifyPropertyChanged(this, "Mouse Clicked");
+                    if(!_tryAgain)
+                    {
+                        _player1Turn = false;
+                    }
+                    StartCoroutine(WaitForPlayer1Coroutine());
+                }
+            }
+            else // It is player two's turn
+            {
+                if (!_tryAgain && _ai.turnIsOver && _player1TurnOver) // Make sure that the AI turn is already over and that player 1 does not need to try again
+                {
+                    _currentPlayer = _player2;
+                    StartCoroutine(_ai.SelectMove());
+                    _player1Turn = true;
+                }
+            }
+        }
+        else if (Input.GetMouseButtonDown(0))
         {
             
-            if(_player1Turn)
+            if(_player1Turn && !_tryAgain)
             {
                 _currentPlayer = _player1;
                 _player1Turn = false;
             }
             else // It is player two's turn
             {
-                _currentPlayer = _player2;
-                _player1Turn = true;
+                if (!_tryAgain)
+                {
+                    _currentPlayer = _player2;
+                    _player1Turn = true;
+                }
             }
             NotifyPropertyChanged(this, "Mouse Clicked");
         }
 
     }
 
+    /// <summary>
+    /// A routine that waits 3 seconds.
+    /// This is used to stop the ai from choosing a hex when the player's
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator WaitForPlayer1Coroutine()
+    {
+        yield return new WaitForSeconds(2.0f);
+        _player1TurnOver = true;
+
+    }
 
     /// <summary>
     /// 
@@ -81,13 +128,13 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
         // If we are interacting with the board, update the Vector2 for mouse position
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100.0f, LayerMask.GetMask("Hex")))
         {
-            mouseOver.x = hit.point.x;
-            mouseOver.y = hit.point.y;
+            _mouseOver.x = hit.point.x;
+            _mouseOver.y = hit.point.y;
         }
         else
         {
-            mouseOver.x = -1;
-            mouseOver.y = -1;
+            _mouseOver.x = -1;
+            _mouseOver.y = -1;
         }
     }
 
@@ -97,7 +144,7 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     /// <returns></returns>
     public float GetMouseXPos()
     {
-        return mouseOver.x;
+        return _mouseOver.x;
     }
 
     /// <summary>
@@ -106,7 +153,7 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     /// <returns></returns>
     public float GetMouseYPos()
     {
-        return mouseOver.y;
+        return _mouseOver.y;
     }
 
     /// <summary>
@@ -124,14 +171,38 @@ public class CoreGameplay : MonoBehaviour, INotifyPropertyChanged
     /// </summary>
     public void TryAgain()
     {
-        if(_currentPlayer.PlayerName == "player1")
+        _tryAgain = true;
+      
+    }
+
+    public void ResetTryAgain()
+    {
+        _tryAgain = false;
+    }
+
+    /// <summary>
+    /// Event handler for important events that may be sent from the board manager.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void EventHandler(object sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, "blue wins", StringComparison.InvariantCultureIgnoreCase))
         {
-            _currentPlayer = _player2;
+            SceneManager.LoadScene("EndGameScene");
         }
-        else
-        {
-            _currentPlayer = _player2;
-        }
+    }
+
+    /// <summary>
+    /// This function provides a means of letting the AI change the mouse x and y pos
+    /// so when an event is raised to the board manager, the correct coordinates are used.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    public void AIChangeMousePos(float x, float y)
+    {
+        _mouseOver.x = x;
+        _mouseOver.y = y;
     }
 
 }

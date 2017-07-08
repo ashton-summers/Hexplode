@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using Assets.Scripts;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player
+public class Player : IPlayer
 { 
     private string _name;
     private string _color;
@@ -17,12 +18,10 @@ public class Player
 	public string PlayerName
     {
         get { return _name; }
-        set { _name = value; }
     }
 
     public string PlayerColor
     {
         get { return _color; }
-        set { _color = value; }
     }
 }
