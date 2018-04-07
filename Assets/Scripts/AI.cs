@@ -1,25 +1,40 @@
-﻿using Assets.Scripts;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.ComponentModel;
 
-public class AI : MonoBehaviour, IPlayer, IAi, INotifyPropertyChanged
+/// <summary>
+/// AI class that plays against another player.
+/// </summary>
+public class AI : MonoBehaviour, INotifyPropertyChanged
 {
+    /// <summary>
+    /// Color of the player or AI in this case
+    /// </summary>
     private string _playerColor;
+
+    /// <summary>
+    /// Name of the player, or AI in this case
+    /// </summary>
     private string _playerName;
-
-
+    
+    /// <summary>
+    /// Whether or not the AI's turn is over
+    /// </summary>
     public bool turnIsOver = true;
+
+    /// <summary>
+    /// Event handler to notify subscribers when things happen
+    /// </summary>
     public event PropertyChangedEventHandler PropertyChanged;
 
-
-    private void Start()
-    {
-
-    }
-
+    
+    /// <summary>
+    /// Constructs a new AI object
+    /// </summary>
+    /// <param name="newPlayerName"></param>
+    /// <param name="newPlayerColor"></param>
     public AI(string newPlayerName, string newPlayerColor)
     {
         _playerColor = newPlayerColor;
@@ -35,7 +50,6 @@ public class AI : MonoBehaviour, IPlayer, IAi, INotifyPropertyChanged
         {
             return _playerColor;
         }
-
     }
 
     /// <summary>

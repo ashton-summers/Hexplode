@@ -5,17 +5,39 @@ using UnityEngine;
 public class Hexagon : MonoBehaviour
 {
 
-    public List<Hexagon> Charges;
-    public List<Hexagon> AdjacentNeighbors;
+    /// <summary>
+    /// Backing field for x position
+    /// </summary>
     private float _x;
-    private float _y;
-    private bool _isCharged;
-    private Player _owner;
-
-  
 
     /// <summary>
-    /// 
+    /// Backing field for y position.
+    /// </summary>
+    private float _y;
+
+    /// <summary>
+    /// Backing field for whether or not this hex is charged.
+    /// </summary>
+    private bool _isCharged;
+
+    /// <summary>
+    /// Which player owns this hex.
+    /// </summary>
+    private Player _owner;
+
+    /// <summary>
+    /// List of charges for this hex.
+    /// </summary>
+    public List<Hexagon> Charges;
+
+    /// <summary>
+    /// List of hexes that are adjacent to this.
+    /// </summary>
+    public List<Hexagon> AdjacentNeighbors;
+
+
+    /// <summary>
+    /// Gets or sets the x position
     /// </summary>
     public float x
     {
@@ -24,7 +46,7 @@ public class Hexagon : MonoBehaviour
     }
 
     /// <summary>
-    /// 
+    /// Gets or sets the y position.
     /// </summary>
     public float y
     {
@@ -33,7 +55,7 @@ public class Hexagon : MonoBehaviour
     }
 
     /// <summary>
-    /// 
+    /// Whether or not this hex is charged.
     /// </summary>
     public bool IsCharged
     {
@@ -42,7 +64,6 @@ public class Hexagon : MonoBehaviour
     }
 
  
-
     /// <summary>
     /// Reference to the player who has captured the hex
     /// </summary>

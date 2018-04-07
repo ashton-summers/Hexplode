@@ -7,17 +7,21 @@ using System.Xml;
 using System.Xml.Linq;
 using UnityEngine;
 
+/// <summary>
+/// Manages the events that take place on the game board.
+/// </summary>
 public class BoardManager : MonoBehaviour, INotifyPropertyChanged
 {
 
     private static XDocument _doc = XDocument.Load("GameBoards.xml");
     private XElement _smallBoard =_doc.Root.Element("SmallBoard");
     private XElement _bigBoard = _doc.Root.Element("BigBoard");
+    private AI _ai;
+    private AudioSource chargeSound = new AudioSource();
     public List<Hexagon> Hexagons = new List<Hexagon>();
     public GameObject hexagonPrefab;
     public GameObject chargePrefab;
     public CoreGameplay cg;
-    private AI _ai;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -25,6 +29,8 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
     {
         cg.PropertyChanged += new PropertyChangedEventHandler(eventHandler); // Subscribe to CoreGameplay's event system
         LoadBoard(true);
+        chargeSound = GetComponent<AudioSource>();
+        chargeSound.time = 1.3f;
     }
 
     /// <summary>
@@ -53,10 +59,6 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
             {
                 boardColumns = _smallBoard.Descendants().Where(attribute => attribute.Name == "Column"); // Grab all descendants with the name 'Column' under 'SmallBoard' tag
             }
-            else
-            {
-
-            }
 
             // Iterate through the columns
             foreach (var column in boardColumns)
@@ -74,9 +76,9 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// 
+    /// Draww charges on the board
     /// </summary>
-    /// <param name="doc"></param>
+    /// <param name="bigSmall"> Whether to draw the big or small board</param>
     private void DrawCharges(bool bigSmall)
     {
         int hexIndex = -1, numRows = -1;
@@ -151,7 +153,7 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
         {
             index = int.Parse(hex.Element("index").Value.ToString());
             neighborsString = hex.Element("neighborList").Value.ToString();
-            neighborsList = parseNeigborsString(neighborsString);
+            neighborsList = ParseNeigborsString(neighborsString);
 
             // Iterate through neighbors list. Max number of neighbors is 6
             foreach(var neighborIndex in neighborsList)
@@ -169,7 +171,7 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
     /// </summary>
     /// <param name="neighborsString"></param>
     /// <returns></returns>
-    private IEnumerable<string> parseNeigborsString(string neighborsString)
+    private IEnumerable<string> ParseNeigborsString(string neighborsString)
     {
         IEnumerable<string> values = neighborsString.Split(',');
         return values;
@@ -221,7 +223,11 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
         }
     }
 
-    // Instantiates a hexagon at location x and y
+    /// <summary>
+    /// Instantiates a hexagon at the given X and Y positions
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
     private void GenerateHexagon(int x, int y)
     {
         Vector3 vTemp = new Vector3();
@@ -393,6 +399,7 @@ public class BoardManager : MonoBehaviour, INotifyPropertyChanged
         MeshRenderer mr = hex.Charges[index].GetComponent<MeshRenderer>();
         mr.material.color = new Color32(255, 255, 255, 0); // Change the charge to white.
         hex.Charges[index].IsCharged = true;
+        chargeSound.Play();
     }
 
     /// <summary>
